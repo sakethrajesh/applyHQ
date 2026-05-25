@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass
 from typing import Iterator, Union
 
@@ -22,6 +23,13 @@ class ProjectSummary:
 class TexFileRef:
     path: str
     name: str
+
+
+_LIKELY_RESUME_FILE = re.compile(
+    r"(?i)^(resume|cv|main|.*resume.*)\.tex$"
+)
+# Cap how many arbitrary .tex files we download when no likely name matches.
+_MAX_TEX_SCAN = 12
 
 
 class OverleafService:
@@ -67,7 +75,12 @@ class OverleafService:
 
     def _api_client(self) -> pyoverleaf.Api:
         if self._api is None:
-            api = pyoverleaf.Api(host=self._host) if self._host else pyoverleaf.Api()
+            timeout = int(os.environ.get("PYOVERLEAF_TIMEOUT", "20"))
+            api = (
+                pyoverleaf.Api(host=self._host, timeout=timeout)
+                if self._host
+                else pyoverleaf.Api(timeout=timeout)
+            )
             self.auth_mode = login_api(
                 api,
                 host=self._host or "www.overleaf.com",
@@ -87,8 +100,11 @@ class OverleafService:
     def list_resume_tex_files(self, project_id: str) -> list[TexFileRef]:
         api = self._api_client()
         root = api.project_get_files(project_id)
+        all_tex = list(_walk_folder(root, ""))
+        likely = [(p, n) for p, n in all_tex if _LIKELY_RESUME_FILE.match(n)]
+        candidates = likely if likely else all_tex[:_MAX_TEX_SCAN]
         refs: list[TexFileRef] = []
-        for path, name in _walk_folder(root, ""):
+        for path, name in candidates:
             try:
                 file = _find_file(root, path)
                 if file is None:
