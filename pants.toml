@@ -1,0 +1,19 @@
+[GLOBAL]
+pants_version = "2.30.0"
+backend_packages = [
+  "pants.backend.python",
+  "pants.backend.python.lint.black",
+]
+
+[source]
+root_patterns = ["/src/python", "/tests/python"]
+
+[python]
+enable_resolves = true
+interpreter_constraints = ["==3.12.*"]
+
+[python.resolves]
+python-default = "3rdparty/python/default.lock"
+
+[python-bootstrap]
+search_path = ["<PYENV>", "<ASDF>", "<PATH>"]

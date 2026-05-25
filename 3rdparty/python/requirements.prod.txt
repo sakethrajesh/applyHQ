@@ -1,0 +1,5 @@
+# Production API deps (minimal — no uvicorn[standard] extras)
+pyoverleaf>=0.1.8
+fastapi>=0.115.0
+uvicorn>=0.32.0
+pydantic>=2.9.0

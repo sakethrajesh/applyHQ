@@ -1,0 +1,17 @@
+# Stricter production overlay: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+services:
+  api:
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "0.35"
+          memory: 192M
+
+  web:
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "0.20"
+          memory: 48M
