@@ -1,5 +1,19 @@
+import { Eye, EyeOff, Link2 } from "lucide-react";
 import { useState } from "react";
 import { API_BASE, clearAuthCookies, postAuthCookies } from "./api";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 const STORAGE_KEY = "resume_overleaf_cookies";
 
@@ -50,116 +64,118 @@ export function ConnectPanel({ onConnected, envConfigured }: Props) {
   }
 
   return (
-    <div className="connect-screen">
-      <div className="connect-card">
-        <h2>Connect to Overleaf</h2>
-        <p className="connect-lead">
-          Paste only the <strong>Value</strong> from{" "}
-          <code className="inline-code">overleaf_session2</code> — not the Name,
-          not <code className="inline-code">overleaf_session2=</code>. Sent to your
-          local API only.
-        </p>
+    <div className="flex min-h-screen items-center justify-center p-6">
+      <Card className="w-full max-w-xl shadow-md">
+        <CardHeader>
+          <div className="mb-2 flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Link2 className="size-5" />
+          </div>
+          <CardTitle className="font-serif text-2xl">Connect to Overleaf</CardTitle>
+          <CardDescription>
+            Paste only the <strong>Value</strong> from{" "}
+            <code className="rounded bg-muted px-1 py-0.5 text-xs">
+              overleaf_session2
+            </code>{" "}
+            — not the name, not{" "}
+            <code className="rounded bg-muted px-1 py-0.5 text-xs">
+              overleaf_session2=
+            </code>
+            . Sent to your API only.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+            <span>DevTools</span>
+            <Badge variant="outline">Inspect</Badge>
+            <span>→</span>
+            <Badge variant="outline">Application</Badge>
+            <span>→</span>
+            <Badge variant="outline">Cookies</Badge>
+            <span>→</span>
+            <Badge variant="outline">overleaf.com</Badge>
+            <span>→</span>
+            <Badge>overleaf_session2</Badge>
+          </div>
 
-        <p className="connect-path-label">DevTools path</p>
-        <nav className="connect-path" aria-label="DevTools navigation">
-          <span>Inspect</span>
-          <span className="connect-path-sep" aria-hidden>
-            →
-          </span>
-          <span>Application</span>
-          <span className="connect-path-sep" aria-hidden>
-            →
-          </span>
-          <span>Cookies</span>
-          <span className="connect-path-sep" aria-hidden>
-            →
-          </span>
-          <span>overleaf.com</span>
-          <span className="connect-path-sep" aria-hidden>
-            →
-          </span>
-          <span className="connect-path-target">overleaf_session2</span>
-        </nav>
+          {envConfigured && (
+            <Alert>
+              <AlertDescription>
+                The API also has cookies in its environment — paste here to
+                override without restarting the server.
+              </AlertDescription>
+            </Alert>
+          )}
 
-        {envConfigured && (
-          <p className="connect-note">
-            The API also has cookies in its environment — you can paste here to
-            override without restarting the server.
-          </p>
-        )}
+          <ol className="list-decimal space-y-2 pl-5 text-sm text-muted-foreground">
+            <li>
+              Open{" "}
+              <a
+                href="https://www.overleaf.com"
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium text-primary underline-offset-4 hover:underline"
+              >
+                overleaf.com
+              </a>{" "}
+              while logged in.
+            </li>
+            <li>
+              DevTools (<kbd className="rounded border px-1 text-xs">F12</kbd>) →
+              Application → Cookies → overleaf.com.
+            </li>
+            <li>
+              Select <code className="text-xs">overleaf_session2</code> and copy
+              the <strong className="text-foreground">Value</strong> column only.
+            </li>
+          </ol>
 
-        <ol className="connect-steps">
-          <li>
-            Open{" "}
-            <a href="https://www.overleaf.com" target="_blank" rel="noreferrer">
-              overleaf.com
-            </a>{" "}
-            and make sure you are logged in.
-          </li>
-          <li>
-            Right-click the page → <strong>Inspect</strong> (or press{" "}
-            <kbd>F12</kbd> / <kbd>⌘⌥I</kbd> on Mac).
-          </li>
-          <li>
-            Open the <strong>Application</strong> tab (Chrome/Edge) or{" "}
-            <strong>Storage</strong> tab (Firefox).
-          </li>
-          <li>
-            In the left sidebar: <strong>Cookies</strong> →{" "}
-            <strong>overleaf.com</strong>.
-          </li>
-          <li>
-            In the cookie table, click{" "}
-            <code className="inline-code">overleaf_session2</code>.
-          </li>
-          <li>
-            Copy the <strong>Value</strong> column (the long string on the right).
-            Do not copy <strong>Name</strong>.
-          </li>
-        </ol>
+          <div className="space-y-2">
+            <Label htmlFor="session-token">Session token</Label>
+            <Textarea
+              id="session-token"
+              rows={3}
+              placeholder="Paste token value only"
+              value={cookies}
+              onChange={(e) => setCookies(e.target.value)}
+              spellCheck={false}
+              autoComplete="off"
+              data-1p-ignore
+              className={showValue ? "" : "font-mono text-transparent caret-foreground shadow-[inset_0_0_0_9999px_var(--color-muted)]"}
+            />
+          </div>
 
-        <label className="field connect-field">
-          <span>Session token</span>
-          <textarea
-            className={`connect-input ${showValue ? "" : "is-masked"}`}
-            rows={3}
-            placeholder="Paste token value only"
-            value={cookies}
-            onChange={(e) => setCookies(e.target.value)}
-            spellCheck={false}
-            autoComplete="off"
-            data-1p-ignore
-          />
-        </label>
-
-        <div className="connect-actions">
-          <button
-            type="button"
-            className="primary-btn"
-            onClick={connect}
-            disabled={busy}
-          >
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+        <CardFooter className="flex flex-wrap gap-2">
+          <Button onClick={connect} disabled={busy}>
             {busy ? "Connecting…" : "Connect"}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="ghost-btn"
+            variant="outline"
             onClick={() => setShowValue((v) => !v)}
           >
-            {showValue ? "Hide" : "Show"} value
-          </button>
-        </div>
-
-        {error && <div className="banner error">{error}</div>}
-
-        <p className="connect-foot muted">
-          Equivalent to a logged-in browser session. Revoke anytime by logging out
-          of Overleaf or clearing cookies in Overleaf account settings.
-          <br />
-          API: <code className="inline-code">{API_BASE}</code> (Docker should show{" "}
-          <code className="inline-code">/api</code>)
+            {showValue ? (
+              <>
+                <EyeOff className="size-4" /> Hide
+              </>
+            ) : (
+              <>
+                <Eye className="size-4" /> Show
+              </>
+            )}
+          </Button>
+        </CardFooter>
+        <p className="px-6 pb-6 text-xs text-muted-foreground">
+          Revoke by logging out of Overleaf. API base:{" "}
+          <code className="rounded bg-muted px-1">{API_BASE}</code>
+          {API_BASE === "/api" ? " (Docker OK)" : ""}
         </p>
-      </div>
+      </Card>
     </div>
   );
 }

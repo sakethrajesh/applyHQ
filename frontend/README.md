@@ -10,6 +10,12 @@ npm run dev      # http://localhost:5173
 npm run build    # static output in dist/
 ```
 
+UI uses [shadcn/ui](https://ui.shadcn.com) (Tailwind v4). Add components:
+
+```bash
+npx shadcn@latest add <component>
+```
+
 ## API URL
 
 | Environment | `VITE_API_BASE` |

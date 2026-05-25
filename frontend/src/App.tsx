@@ -1,3 +1,4 @@
+import { Loader2, RefreshCw, Unplug } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   fetchAuthConfig,
@@ -15,7 +16,27 @@ import {
 import { CopyButton } from "./CopyButton";
 import { FileListSkeleton, LoadingPanel, type LoadPhase } from "./LoadingPanel";
 import type { ParsedResume, Project, TexFile } from "./types";
-import "./App.css";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 
 function App() {
   const [connected, setConnected] = useState(false);
@@ -310,7 +331,7 @@ function App() {
 
   if (booting) {
     return (
-      <div className="app booting">
+      <div className="flex min-h-screen items-center justify-center p-6">
         <LoadingPanel phase="projects" />
       </div>
     );
@@ -318,8 +339,14 @@ function App() {
 
   if (!connected) {
     return (
-      <div className="app">
-        {error && <div className="banner error connect-banner">{error}</div>}
+      <div className="min-h-screen">
+        {error && (
+          <div className="p-4">
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          </div>
+        )}
         <ConnectPanel
           onConnected={handleConnected}
           envConfigured={envConfigured}
@@ -329,84 +356,128 @@ function App() {
   }
 
   return (
-    <div className="app">
-      <header className="topbar">
-        <div className="brand">
-          <span className="brand-mark">§</span>
-          <div>
-            <h1>Resume Clipboard</h1>
-            <p>Overleaf → parsed sections → one-click copy</p>
-            {authHint && <p className="auth-hint">{authHint}</p>}
+    <div className="flex min-h-screen flex-col">
+      <header className="sticky top-0 z-10 border-b bg-card/80 backdrop-blur-md">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6">
+          <div className="flex items-center gap-3">
+            <span className="flex size-10 items-center justify-center rounded-lg bg-primary font-serif text-xl text-primary-foreground">
+              §
+            </span>
+            <div>
+              <h1 className="font-serif text-lg font-semibold tracking-tight">
+                Resume Clipboard
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                Overleaf → parsed sections → one-click copy
+              </p>
+              {authHint && (
+                <p className="mt-0.5 text-xs text-primary">{authHint}</p>
+              )}
+            </div>
           </div>
-        </div>
-        <div className="topbar-actions">
-          <button
-            type="button"
-            className="ghost-btn"
-            onClick={handleDisconnect}
-            disabled={busy}
-          >
-            Change session
-          </button>
-          <button
-            type="button"
-            className={`ghost-btn ${busy ? "is-busy" : ""}`}
-            onClick={refreshAll}
-            disabled={busy}
-            aria-busy={busy}
-          >
-            {busy && <span className="btn-spinner" aria-hidden />}
-            {loadPhase === "refresh" ? "Refreshing…" : "Refresh"}
-          </button>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleDisconnect}
+              disabled={busy}
+            >
+              <Unplug className="size-4" />
+              Change session
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={refreshAll}
+              disabled={busy}
+            >
+              {busy ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <RefreshCw className="size-4" />
+              )}
+              {loadPhase === "refresh" ? "Refreshing…" : "Refresh"}
+            </Button>
+          </div>
         </div>
       </header>
 
-      {error && <div className="banner error">{error}</div>}
+      {error && (
+        <div className="mx-auto w-full max-w-6xl px-4 pt-4 sm:px-6">
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        </div>
+      )}
 
-      <div className="layout">
-        <aside className={`sidebar ${busy ? "is-loading" : ""}`}>
-          <label className="field">
-            <span>Overleaf project</span>
-            <select
+      <div className="mx-auto flex w-full max-w-6xl flex-1 gap-0 px-4 py-6 sm:px-6 lg:gap-6">
+        <aside
+          className={cn(
+            "w-full shrink-0 space-y-4 lg:w-64",
+            busy && "pointer-events-none opacity-60",
+          )}
+        >
+          <div className="space-y-2">
+            <Label>Overleaf project</Label>
+            <Select
               value={projectId}
-              onChange={(e) => handleProjectChange(e.target.value)}
+              onValueChange={(v) => {
+                if (v) handleProjectChange(v);
+              }}
               disabled={!projects.length || busy}
             >
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          </label>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select project" />
+              </SelectTrigger>
+              <SelectContent>
+                {projects.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-          <p className="sidebar-label">Resume files</p>
-          {loadPhase === "files" || loadPhase === "projects" ? (
-            <FileListSkeleton />
-          ) : (
-            <ul className="file-list">
-              {files.map((f) => (
-                <li key={f.path}>
-                  <button
-                    type="button"
-                    className={f.path === selectedPath ? "active" : ""}
-                    onClick={() => handleFileSelect(f.path)}
-                    disabled={busy}
-                  >
-                    {f.name}
-                  </button>
-                </li>
-              ))}
-              {!files.length && !busy && (
-                <li className="muted">No resume .tex files found</li>
-              )}
-            </ul>
-          )}
+          <Separator />
+
+          <div className="space-y-2">
+            <Label className="text-muted-foreground">Resume files</Label>
+            {loadPhase === "files" || loadPhase === "projects" ? (
+              <FileListSkeleton />
+            ) : (
+              <ScrollArea className="h-[min(50vh,420px)]">
+                <ul className="space-y-1 pr-3">
+                  {files.map((f) => (
+                    <li key={f.path}>
+                      <Button
+                        type="button"
+                        variant={f.path === selectedPath ? "secondary" : "ghost"}
+                        size="sm"
+                        className="h-auto w-full justify-start py-2 text-left font-normal"
+                        onClick={() => handleFileSelect(f.path)}
+                        disabled={busy}
+                      >
+                        {f.name}
+                      </Button>
+                    </li>
+                  ))}
+                  {!files.length && !busy && (
+                    <li className="px-2 py-3 text-sm text-muted-foreground">
+                      No resume .tex files found
+                    </li>
+                  )}
+                </ul>
+              </ScrollArea>
+            )}
+          </div>
         </aside>
 
-        <main className={`content ${showLoader ? "is-loading" : ""}`}>
+        <main className="relative min-w-0 flex-1">
           {showLoader && (
-            <div className="content-loader-overlay">
+            <div className="absolute inset-0 z-20 flex items-start justify-center bg-background/80 p-6 backdrop-blur-sm">
               <LoadingPanel
                 phase={displayPhase}
                 projectName={activeProject?.name}
@@ -415,91 +486,106 @@ function App() {
           )}
 
           {resume && (
-            <div className="resume-content">
-              <div className="content-head">
-                <h2>{resume.display_name}</h2>
-                <span className="file-tag">{resume.source_path}</span>
-                <CopyButton text={resume.heading_all} label="Copy heading" />
-              </div>
-
-              <section className="card-group">
-                <div className="card">
-                  <div className="card-head">
-                    <h3>Heading</h3>
+            <ScrollArea className="h-[calc(100vh-8rem)] pr-4">
+              <div className="space-y-8 pb-8">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <h2 className="font-serif text-2xl font-semibold tracking-tight">
+                      {resume.display_name}
+                    </h2>
+                    <Badge variant="outline" className="mt-2 font-mono text-xs">
+                      {resume.source_path}
+                    </Badge>
                   </div>
-                  <div className="card-body stack">
+                  <CopyButton text={resume.heading_all} label="Copy heading" />
+                </div>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Heading</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
                     {resume.heading_name && (
-                      <div className="row">
-                        <p>{resume.heading_name}</p>
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="text-sm">{resume.heading_name}</p>
                         <CopyButton text={resume.heading_name} />
                       </div>
                     )}
                     {resume.heading_contact && (
-                      <div className="row">
-                        <p>{resume.heading_contact}</p>
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="text-sm">{resume.heading_contact}</p>
                         <CopyButton text={resume.heading_contact} />
                       </div>
                     )}
                     {resume.heading_meta && (
-                      <div className="row">
-                        <p>{resume.heading_meta}</p>
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="text-sm text-muted-foreground">
+                          {resume.heading_meta}
+                        </p>
                         <CopyButton text={resume.heading_meta} />
                       </div>
                     )}
-                  </div>
-                </div>
-              </section>
+                  </CardContent>
+                </Card>
 
-              {resume.sections.map((section) => (
-                <section key={section.title} className="card-group">
-                  <h3 className="section-title">{section.title}</h3>
-
-                  {section.entries.map((entry, i) => (
-                    <article key={`${section.title}-${i}`} className="card">
-                      <div className="card-head">
-                        <div>
-                          <strong>{entry.organization}</strong>
-                          <span className="meta">
-                            {entry.role}
-                            {entry.dates ? ` · ${entry.dates}` : ""}
-                            {entry.location ? ` · ${entry.location}` : ""}
-                          </span>
-                        </div>
-                        <div className="card-actions">
-                          {entry.bullets.length > 0 && (
+                {resume.sections.map((section) => (
+                  <section key={section.title} className="space-y-3">
+                    <h3 className="font-serif text-lg font-medium">
+                      {section.title}
+                    </h3>
+                    {section.entries.map((entry, i) => (
+                      <Card key={`${section.title}-${i}`}>
+                        <CardHeader className="flex-row items-start justify-between gap-4 space-y-0 pb-2">
+                          <div>
+                            <CardTitle className="text-base">
+                              {entry.organization}
+                            </CardTitle>
+                            <CardDescription>
+                              {entry.role}
+                              {entry.dates ? ` · ${entry.dates}` : ""}
+                              {entry.location ? ` · ${entry.location}` : ""}
+                            </CardDescription>
+                          </div>
+                          <div className="flex shrink-0 flex-wrap gap-2">
+                            {entry.bullets.length > 0 && (
+                              <CopyButton
+                                text={
+                                  entry.bullets_block ??
+                                  entry.bullets.join("\n")
+                                }
+                                label="Copy bullets"
+                              />
+                            )}
                             <CopyButton
-                              text={
-                                entry.bullets_block ??
-                                entry.bullets.join("\n")
-                              }
-                              label="Copy bullets"
+                              text={entry.full_block}
+                              label="Copy all"
                             />
-                          )}
-                          <CopyButton text={entry.full_block} label="Copy all" />
-                        </div>
-                      </div>
-                      <div className="card-body stack">
-                        <p className="mono entry-header">{entry.header_line}</p>
-                        {entry.bullets.map((b, j) => (
-                          <p key={j} className="bullet-line">
-                            {b}
+                          </div>
+                        </CardHeader>
+                        <CardContent className="space-y-2">
+                          <p className="font-mono text-xs text-muted-foreground">
+                            {entry.header_line}
                           </p>
-                        ))}
-                      </div>
-                    </article>
-                  ))}
-
-                  {section.lines.map((line, i) => (
-                    <article key={`line-${i}`} className="card compact">
-                      <div className="row">
-                        <p>{line}</p>
-                        <CopyButton text={line} />
-                      </div>
-                    </article>
-                  ))}
-                </section>
-              ))}
-            </div>
+                          {entry.bullets.map((b, j) => (
+                            <p key={j} className="text-sm leading-relaxed">
+                              {b}
+                            </p>
+                          ))}
+                        </CardContent>
+                      </Card>
+                    ))}
+                    {section.lines.map((line, i) => (
+                      <Card key={`line-${i}`}>
+                        <CardContent className="flex items-center justify-between gap-3 py-4">
+                          <p className="text-sm">{line}</p>
+                          <CopyButton text={line} />
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </section>
+                ))}
+              </div>
+            </ScrollArea>
           )}
         </main>
       </div>

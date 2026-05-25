@@ -1,3 +1,9 @@
+import { Check, Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+
 export type LoadPhase = "projects" | "files" | "resume" | "refresh";
 
 const STEPS: { id: LoadPhase; label: string }[] = [
@@ -20,78 +26,75 @@ export function LoadingPanel({
   phase: LoadPhase;
   projectName?: string;
 }) {
-  const activeIdx =
-    phase === "refresh" ? -1 : phaseIndex(phase);
+  const activeIdx = phase === "refresh" ? -1 : phaseIndex(phase);
 
   return (
-    <div className="loading-panel" role="status" aria-live="polite">
-      <div className="loading-hero">
-        <div className="loading-orbit" aria-hidden>
-          <span className="orbit-ring" />
-          <span className="orbit-core">§</span>
+    <Card className="mx-auto w-full max-w-lg border-dashed shadow-sm" role="status" aria-live="polite">
+      <CardHeader className="items-center text-center">
+        <div className="mb-2 flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <Loader2 className="size-7 animate-spin" aria-hidden />
         </div>
-        <div className="loading-copy">
-          <h2 className="loading-title">
-            {phase === "refresh" ? "Refreshing project" : "Loading project"}
-          </h2>
-          <p className="loading-sub">
-            {projectName
-              ? `Syncing “${projectName}” from Overleaf`
-              : "Fetching your latest resume from Overleaf"}
-          </p>
+        <CardTitle className="font-serif text-xl">
+          {phase === "refresh" ? "Refreshing project" : "Loading project"}
+        </CardTitle>
+        <p className="text-sm text-muted-foreground">
+          {projectName
+            ? `Syncing “${projectName}” from Overleaf`
+            : "Fetching your latest resume from Overleaf"}
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <ol className="space-y-2">
+          {STEPS.map((step, i) => {
+            const done = phase === "refresh" ? false : i < activeIdx;
+            const active =
+              phase === "refresh" ? i === 0 : i === activeIdx;
+            return (
+              <li
+                key={step.id}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg border px-3 py-2 text-sm transition-colors",
+                  done && "border-primary/20 bg-primary/5",
+                  active && "border-primary bg-primary/10 font-medium",
+                  !done && !active && "border-transparent text-muted-foreground",
+                )}
+              >
+                <span
+                  className={cn(
+                    "flex size-6 shrink-0 items-center justify-center rounded-full border text-xs",
+                    done && "border-primary bg-primary text-primary-foreground",
+                    active && "border-primary",
+                  )}
+                  aria-hidden
+                >
+                  {done ? <Check className="size-3.5" /> : i + 1}
+                </span>
+                <span>{step.label}</span>
+                {active && (
+                  <Badge variant="secondary" className="ml-auto">
+                    Active
+                  </Badge>
+                )}
+              </li>
+            );
+          })}
+        </ol>
+        <div className="space-y-3" aria-hidden>
+          <Skeleton className="h-24 w-full rounded-lg" />
+          <Skeleton className="h-20 w-full rounded-lg" />
+          <Skeleton className="h-20 w-full rounded-lg" />
         </div>
-      </div>
-
-      <ol className="loading-steps">
-        {STEPS.map((step, i) => {
-          const done = phase === "refresh" ? false : i < activeIdx;
-          const active =
-            phase === "refresh"
-              ? i === 0
-              : i === activeIdx;
-          return (
-            <li
-              key={step.id}
-              className={`loading-step ${done ? "done" : ""} ${active ? "active" : ""}`}
-              style={{ animationDelay: `${i * 80}ms` }}
-            >
-              <span className="step-marker" aria-hidden>
-                {done ? "✓" : active ? <span className="step-pulse" /> : ""}
-              </span>
-              <span className="step-label">{step.label}</span>
-            </li>
-          );
-        })}
-      </ol>
-
-      <div className="skeleton-stack" aria-hidden>
-        <div className="skeleton-card">
-          <div className="sk-line sk-title" />
-          <div className="sk-line sk-wide" />
-          <div className="sk-line sk-medium" />
-        </div>
-        <div className="skeleton-card">
-          <div className="sk-line sk-title" />
-          <div className="sk-line sk-full" />
-          <div className="sk-line sk-full" />
-          <div className="sk-line sk-medium" />
-        </div>
-        <div className="skeleton-card">
-          <div className="sk-line sk-title" />
-          <div className="sk-line sk-full" />
-          <div className="sk-line sk-full" />
-        </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
 
 export function FileListSkeleton() {
   return (
-    <ul className="file-list file-list-skeleton" aria-hidden>
+    <ul className="space-y-2" aria-hidden>
       {[72, 88, 64, 80].map((w, i) => (
         <li key={i}>
-          <div className="sk-file" style={{ width: `${w}%` }} />
+          <Skeleton className="h-9 rounded-md" style={{ width: `${w}%` }} />
         </li>
       ))}
     </ul>
