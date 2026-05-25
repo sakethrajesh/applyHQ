@@ -30,6 +30,10 @@ function App() {
   const [resume, setResume] = useState<ParsedResume | null>(null);
   const [loadPhase, setLoadPhase] = useState<LoadPhase | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const resumeCache = useRef(new Map<string, ParsedResume>());
+  const clearResumeCache = useCallback(() => {
+    resumeCache.current.clear();
+  }, []);
 
   const activeProject = projects.find((p) => p.id === projectId);
   const busy = loadPhase !== null;
@@ -47,8 +51,17 @@ function App() {
   );
 
   const loadResume = useCallback(
-    async (pid: string, path: string, bust: number) => {
-      const r = await fetchParsedResume(pid, path, bust);
+    async (pid: string, path: string, cacheBust?: number) => {
+      const key = `${pid}:${path}`;
+      if (cacheBust == null) {
+        const cached = resumeCache.current.get(key);
+        if (cached) {
+          setResume(cached);
+          return cached;
+        }
+      }
+      const r = await fetchParsedResume(pid, path, cacheBust);
+      resumeCache.current.set(key, r);
       setResume(r);
       return r;
     },
@@ -107,6 +120,7 @@ function App() {
     setLoadPhase("refresh");
     const bust = Date.now();
     try {
+      clearResumeCache();
       await refreshOverleafSession();
       setLoadPhase("projects");
       const list = await fetchProjects(bust);
@@ -151,7 +165,7 @@ function App() {
     } finally {
       setLoadPhase(null);
     }
-  }, [projectId, selectedPath, loadFiles, loadResume]);
+  }, [projectId, selectedPath, loadFiles, loadResume, clearResumeCache]);
 
   const handleConnected = useCallback(() => {
     skipProjectEffect.current = true;
@@ -162,6 +176,7 @@ function App() {
 
   const handleDisconnect = useCallback(async () => {
     await disconnectOverleaf();
+    clearResumeCache();
     setConnected(false);
     setProjects([]);
     setProjectId("");
@@ -172,7 +187,7 @@ function App() {
     setEnvConfigured(false);
     setLoadPhase(null);
     setError(null);
-  }, []);
+  }, [clearResumeCache]);
 
   useEffect(() => {
     let cancelled = false;
@@ -254,8 +269,8 @@ function App() {
       skipProjectEffect.current = false;
       return;
     }
-    void loadProjectData(projectId, selectedPath);
-  }, [projectId, connected, loadProjectData, selectedPath]);
+    void loadProjectData(projectId);
+  }, [projectId, connected, loadProjectData]);
 
   const handleProjectChange = useCallback(
     (pid: string) => {
@@ -268,11 +283,17 @@ function App() {
 
   const handleFileSelect = useCallback(
     (path: string) => {
-      setSelectedPath(path);
       if (!projectId || !path) return;
+      if (path === selectedPath && resume?.source_path === path) return;
+      setSelectedPath(path);
       setError(null);
+      const cached = resumeCache.current.get(`${projectId}:${path}`);
+      if (cached) {
+        setResume(cached);
+        return;
+      }
       setLoadPhase("resume");
-      loadResume(projectId, path, Date.now())
+      loadResume(projectId, path)
         .catch((e) => {
           setError(
             e instanceof Error ? e.message : "Failed to parse resume",
@@ -280,7 +301,7 @@ function App() {
         })
         .finally(() => setLoadPhase(null));
     },
-    [projectId, loadResume],
+    [projectId, loadResume, selectedPath, resume],
   );
 
   const showLoader = loadPhase !== null;
