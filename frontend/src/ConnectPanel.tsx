@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { clearAuthCookies, postAuthCookies } from "./api";
+import { API_BASE, clearAuthCookies, postAuthCookies } from "./api";
 
 const STORAGE_KEY = "resume_overleaf_cookies";
 
@@ -155,6 +155,9 @@ export function ConnectPanel({ onConnected, envConfigured }: Props) {
         <p className="connect-foot muted">
           Equivalent to a logged-in browser session. Revoke anytime by logging out
           of Overleaf or clearing cookies in Overleaf account settings.
+          <br />
+          API: <code className="inline-code">{API_BASE}</code> (Docker should show{" "}
+          <code className="inline-code">/api</code>)
         </p>
       </div>
     </div>

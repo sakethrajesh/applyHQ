@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   fetchAuthConfig,
   fetchDefaultProject,
@@ -66,17 +66,41 @@ function App() {
       setProjects(list);
       const saved = localStorage.getItem("resume_project_id");
       const initial =
-        saved ?? defaults.project_id ?? (list[0]?.id ?? "");
+        saved && list.some((p) => p.id === saved)
+          ? saved
+          : (defaults.project_id && list.some((p) => p.id === defaults.project_id)
+              ? defaults.project_id
+              : (list[0]?.id ?? ""));
+      if (!initial) {
+        setError(
+          list.length
+            ? "Could not pick a project."
+            : "No Overleaf projects found. Check your session token.",
+        );
+        return;
+      }
       setProjectId(initial);
+
+      setLoadPhase("files");
+      const f = await loadFiles(initial, Date.now());
+      const path = f[0]?.path ?? "";
+      if (!path) {
+        setResume(null);
+        setError("No resume .tex files found in this project.");
+        return;
+      }
+      setLoadPhase("resume");
+      await loadResume(initial, path, Date.now());
     } catch (e) {
       setError(
         e instanceof Error
           ? e.message
           : "Could not reach API. Run: pants run src/python/api:server",
       );
+    } finally {
       setLoadPhase(null);
     }
-  }, []);
+  }, [loadFiles, loadResume]);
 
   const refreshAll = useCallback(async () => {
     setError(null);
@@ -130,6 +154,7 @@ function App() {
   }, [projectId, selectedPath, loadFiles, loadResume]);
 
   const handleConnected = useCallback(() => {
+    skipProjectEffect.current = true;
     setConnected(true);
     setError(null);
     loadProjects();
@@ -158,6 +183,7 @@ function App() {
         setAuthHint(auth.hint);
         setEnvConfigured(auth.env_configured);
         if (auth.configured) {
+          skipProjectEffect.current = true;
           setConnected(true);
           await loadProjects();
           return;
@@ -167,6 +193,7 @@ function App() {
         });
         if (cancelled) return;
         if (restored) {
+          skipProjectEffect.current = true;
           setAuthHint("Using cookies pasted in this app session");
           await loadProjects();
         }
@@ -187,31 +214,74 @@ function App() {
     };
   }, [loadProjects]);
 
-  useEffect(() => {
-    if (!connected || !projectId) return;
-    localStorage.setItem("resume_project_id", projectId);
-    setError(null);
-    setResume(null);
-    setLoadPhase("files");
-    const bust = Date.now();
-    loadFiles(projectId, bust).catch((e) => {
-      setError(e instanceof Error ? e.message : "Failed to list files");
-      setLoadPhase(null);
-    });
-  }, [projectId, loadFiles, connected]);
+  const loadProjectData = useCallback(
+    async (pid: string, preferredPath?: string) => {
+      if (!pid) return;
+      setError(null);
+      localStorage.setItem("resume_project_id", pid);
+      setResume(null);
+      const bust = Date.now();
+      setLoadPhase("files");
+      try {
+        const f = await loadFiles(pid, bust);
+        const path =
+          preferredPath && f.some((x) => x.path === preferredPath)
+            ? preferredPath
+            : (f[0]?.path ?? "");
+        if (!path) {
+          setResume(null);
+          setError("No resume .tex files found in this project.");
+          return;
+        }
+        setLoadPhase("resume");
+        await loadResume(pid, path, bust);
+      } catch (e) {
+        setError(
+          e instanceof Error ? e.message : "Failed to load project",
+        );
+      } finally {
+        setLoadPhase(null);
+      }
+    },
+    [loadFiles, loadResume],
+  );
+
+  const skipProjectEffect = useRef(true);
 
   useEffect(() => {
-    if (!connected || !projectId || !selectedPath) {
+    if (!connected || !projectId) return;
+    if (skipProjectEffect.current) {
+      skipProjectEffect.current = false;
       return;
     }
-    setLoadPhase("resume");
-    const bust = Date.now();
-    loadResume(projectId, selectedPath, bust)
-      .catch((e) => {
-        setError(e instanceof Error ? e.message : "Failed to parse resume");
-      })
-      .finally(() => setLoadPhase(null));
-  }, [projectId, selectedPath, loadResume, connected]);
+    void loadProjectData(projectId, selectedPath);
+  }, [projectId, connected, loadProjectData, selectedPath]);
+
+  const handleProjectChange = useCallback(
+    (pid: string) => {
+      skipProjectEffect.current = true;
+      setProjectId(pid);
+      void loadProjectData(pid);
+    },
+    [loadProjectData],
+  );
+
+  const handleFileSelect = useCallback(
+    (path: string) => {
+      setSelectedPath(path);
+      if (!projectId || !path) return;
+      setError(null);
+      setLoadPhase("resume");
+      loadResume(projectId, path, Date.now())
+        .catch((e) => {
+          setError(
+            e instanceof Error ? e.message : "Failed to parse resume",
+          );
+        })
+        .finally(() => setLoadPhase(null));
+    },
+    [projectId, loadResume],
+  );
 
   const showLoader = loadPhase !== null;
   const displayPhase: LoadPhase =
@@ -278,7 +348,7 @@ function App() {
             <span>Overleaf project</span>
             <select
               value={projectId}
-              onChange={(e) => setProjectId(e.target.value)}
+              onChange={(e) => handleProjectChange(e.target.value)}
               disabled={!projects.length || busy}
             >
               {projects.map((p) => (
@@ -299,7 +369,7 @@ function App() {
                   <button
                     type="button"
                     className={f.path === selectedPath ? "active" : ""}
-                    onClick={() => setSelectedPath(f.path)}
+                    onClick={() => handleFileSelect(f.path)}
                     disabled={busy}
                   >
                     {f.name}

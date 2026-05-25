@@ -110,6 +110,15 @@ def default_project() -> dict[str, str | None]:
     return {"project_id": os.environ.get("RESUME_OVERLEAF_PROJECT_ID")}
 
 
+@app.get("/config/client")
+def client_config() -> dict[str, str]:
+    """Hints for debugging Docker vs local (browser calls this via /api/config/client)."""
+    return {
+        "api_reachable": "ok",
+        "overleaf_host": os.environ.get("PYOVERLEAF_HOST", "www.overleaf.com"),
+    }
+
+
 @app.get("/config/auth")
 def auth_config() -> dict[str, str | bool | None]:
     from overleaf_client.auth import cookies_from_env
