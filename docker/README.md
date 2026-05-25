@@ -5,19 +5,19 @@ Production-oriented Compose stack: small images, low idle RAM, API not exposed o
 ## Quick start
 
 ```bash
-cp .env.example .env
-# Set RESUME_OVERLEAF_COOKIES in .env
 docker compose up --build
 ```
 
-Open http://localhost:8080
+Open http://localhost:8080 and paste your Overleaf session cookie in the UI.
+
+Optional: copy `.env.example` → `.env` to set `WEB_PORT` or pre-seed `RESUME_OVERLEAF_COOKIES`.
 
 ## Services
 
 | Service | Dockerfile | Host port | Notes |
 |---------|------------|-----------|-------|
-| **api** | [api/Dockerfile](api/Dockerfile) | *(internal only)* | FastAPI + pyoverleaf |
-| **web** | [web/Dockerfile](web/Dockerfile) | `${WEB_PORT:-8080}` | nginx + static UI |
+| **api** | [api/Dockerfile](api/Dockerfile) | *(not on host)* | FastAPI; `expose` 8765 on internal network only |
+| **web** | [web/Dockerfile](web/Dockerfile) | `${WEB_PORT:-8080}` → container `8080` | nginx + static UI; proxies `/api/` to `api:8765` |
 
 ## Subfolders
 
@@ -32,9 +32,11 @@ Open http://localhost:8080
 | `docker-compose.prod.yml` | Tighter CPU/RAM overlay |
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ```
+
+Paste cookies in the UI after start, or optionally `export RESUME_OVERLEAF_COOKIES=...` before `up`.
 
 ## Auth in Docker
 
-Browser cookie import does **not** work inside containers. Always set `RESUME_OVERLEAF_COOKIES` in `.env`.
+Browser cookie import does **not** work inside containers. Paste cookies in the **web UI** (recommended). Optionally set `RESUME_OVERLEAF_COOKIES` in the shell or `.env` before `up`.

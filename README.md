@@ -6,10 +6,11 @@ Read Jake-style resume `.tex` files from an Overleaf project, parse them into se
 
 | Mode | Command | UI |
 |------|---------|-----|
-| **Docker** (recommended) | `cp .env.example .env` → edit cookies → `docker compose up --build` | http://localhost:8080 |
+| **Docker** (recommended) | `docker compose up --build` → paste cookies in UI | http://localhost:8080 |
+| **Docker prod** | `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build` | http://localhost:8080 |
 | **Local dev** | `pants run src/python/api:server` + `cd frontend && npm run dev` | http://localhost:5173 |
 
-Overleaf auth: paste session cookies in the **web UI** (recommended) or in `.env` for Docker/CLI — see [src/python/overleaf_client/README.md](src/python/overleaf_client/README.md).
+Overleaf auth: paste session cookies in the **web UI** (recommended). Optional: `export RESUME_OVERLEAF_COOKIES=...` or `.env` for Compose — see [src/python/overleaf_client/README.md](src/python/overleaf_client/README.md).
 
 ## Repository map
 
@@ -37,7 +38,8 @@ pants run src/python/cli:bin -- projects            # CLI
 |----------|---------|---------|
 | `RESUME_OVERLEAF_COOKIES` | API | Overleaf session (Cookie header or token) |
 | `RESUME_OVERLEAF_PROJECT_ID` | API / UI | Default project id |
-| `WEB_PORT` | Compose | Host port for web (default `8080`) |
+| `WEB_PORT` | Compose | Host port for web (default `8080`; set in shell or optional `.env`) |
+| *(none required)* | UI | Paste cookies at runtime via `/api/auth/cookies` |
 
 ## Template requirement
 

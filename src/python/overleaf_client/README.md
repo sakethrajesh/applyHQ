@@ -4,16 +4,17 @@ Thin wrapper around [pyoverleaf](https://github.com/jkulhanek/pyoverleaf) for li
 
 ## Authentication
 
-1. **Manual cookies (Docker / reliable)** — set before starting the API:
+1. **UI session (Docker / recommended)** — paste cookies in the web app; stored in API memory via `POST /auth/cookies`.
+
+2. **Env / file (optional)** — set before starting the API:
 
    ```bash
-   # Token value only (recommended)
    export RESUME_OVERLEAF_COOKIES='YOUR_TOKEN'
    ```
 
    Full Cookie header (`overleaf_session2=...; ...`) still works if you prefer.
 
-2. **Browser cookies (local dev)** — if env vars are unset, tries Chrome, Firefox, Brave, etc.
+3. **Browser cookies (local dev)** — if env vars are unset and no UI session, tries Chrome, Firefox, Brave, etc.
 
 See `auth.py` for formats (Cookie header, JSON, file via `RESUME_OVERLEAF_COOKIE_FILE`).
 

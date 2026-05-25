@@ -1,5 +1,7 @@
 # Local / production Compose — tuned for small images and low idle RAM.
-# Usage: cp .env.example .env && docker compose up --build
+# Usage: docker compose up --build
+# Auth: paste Overleaf cookies in the web UI (POST /api/auth/cookies), or optionally
+# export RESUME_OVERLEAF_COOKIES before `up` (see .env.example). No .env file required.
 
 name: resume-overleaf
 
@@ -14,16 +16,15 @@ services:
       dockerfile: docker/api/Dockerfile
     image: resume-overleaf-api:local
     environment:
+      # Optional overrides from the shell or a project-root .env used for Compose interpolation only.
       RESUME_OVERLEAF_COOKIES: ${RESUME_OVERLEAF_COOKIES:-}
       RESUME_OVERLEAF_COOKIE: ${RESUME_OVERLEAF_COOKIE:-}
       RESUME_OVERLEAF_COOKIE_FILE: ${RESUME_OVERLEAF_COOKIE_FILE:-}
       RESUME_OVERLEAF_PROJECT_ID: ${RESUME_OVERLEAF_PROJECT_ID:-}
       PYOVERLEAF_HOST: ${PYOVERLEAF_HOST:-www.overleaf.com}
-    env_file:
-      - .env
     networks:
       - internal
-    # API not published — only web reaches it (smaller attack surface)
+    # No host port — API is internal-only; nginx on web proxies /api/ → api:8765
     expose:
       - "8765"
     read_only: true
@@ -64,7 +65,7 @@ services:
         VITE_API_BASE: /api
     image: resume-overleaf-web:local
     ports:
-      - "${WEB_PORT:-8080}:8080"
+      - "${WEB_PORT:-8080}:8080"  # only published service; UI + /api proxy
     networks:
       - internal
     depends_on:
