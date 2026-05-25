@@ -1,0 +1,12 @@
+# Coolify overlay — do not bind a host port; Coolify's proxy reaches the container on 8080.
+# Coolify often uses host port 3000 itself, so WEB_PORT=3000 will fail with "port already allocated".
+#
+# In Coolify: add this as an additional Compose file, or set Custom Compose command to:
+#   -f docker-compose.yml -f docker-compose.coolify.yml
+# In the Coolify UI, set the application port to 8080 (container), not 3000 (host).
+
+services:
+  web:
+    ports: !reset null
+    expose:
+      - "8080"

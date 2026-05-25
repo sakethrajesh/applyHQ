@@ -30,10 +30,20 @@ Optional: copy `.env.example` → `.env` to set `WEB_PORT` or pre-seed `RESUME_O
 |------|---------|
 | `docker-compose.yml` | Default local run, resource limits |
 | `docker-compose.prod.yml` | Tighter CPU/RAM overlay |
+| `docker-compose.coolify.yml` | No host port bind (use with Coolify proxy) |
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ```
+
+### Coolify
+
+Coolify's dashboard often listens on **port 3000**. If you set `WEB_PORT=3000`, deploy fails with `port is already allocated`.
+
+1. **Remove** `WEB_PORT=3000` from Coolify environment variables (or set `WEB_PORT=8080` only if you need a host bind).
+2. Add **`docker-compose.coolify.yml`** as an additional Compose file (or `-f docker-compose.yml -f docker-compose.coolify.yml`).
+3. In Coolify, set the app **container port** to **8080** (not 3000).
+4. Point your domain at the `web` service; traffic still flows `browser → Coolify proxy → nginx:8080 → /api → api`.
 
 Paste cookies in the UI after start, or optionally `export RESUME_OVERLEAF_COOKIES=...` before `up`.
 
