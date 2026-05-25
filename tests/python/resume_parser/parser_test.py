@@ -8,8 +8,8 @@ FIXTURE = Path(__file__).resolve().parent / "fixtures" / "sample_resume.tex"
 
 def test_parse_sample_resume() -> None:
     resume = parse_resume_file(FIXTURE)
-    assert resume.heading_name == "Ananya Kanuparthy"
-    assert "703" in resume.heading_contact
+    assert resume.heading_name == "Jane Doe"
+    assert "555" in resume.heading_contact
     assert len(resume.sections) >= 3
 
     experience = next(s for s in resume.sections if s.title == "Experience")
