@@ -549,10 +549,14 @@ function App() {
                           <div className="flex shrink-0 flex-wrap gap-2">
                             {entry.bullets.length > 0 && (
                               <CopyButton
-                                text={
-                                  entry.bullets_block ??
-                                  entry.bullets.join("\n")
-                                }
+                                text={entry.bullets
+                                  .map((b) => {
+                                    const s = b.trim();
+                                    if (!s) return "";
+                                    return s.startsWith("-") ? s : `- ${s}`;
+                                  })
+                                  .filter(Boolean)
+                                  .join("\n")}
                                 label="Copy bullets"
                               />
                             )}
@@ -568,6 +572,7 @@ function App() {
                           </p>
                           {entry.bullets.map((b, j) => (
                             <p key={j} className="text-sm leading-relaxed">
+                              <span className="mr-2 select-none text-muted-foreground">-</span>
                               {b}
                             </p>
                           ))}
